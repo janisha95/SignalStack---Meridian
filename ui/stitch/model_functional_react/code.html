@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-lowest": "#060e20",
+            "on-tertiary-fixed": "#40000d",
+            "on-surface-variant": "#c2c6d6",
+            "tertiary": "#ffb2b7",
+            "outline": "#8c909f",
+            "tertiary-fixed": "#ffdadb",
+            "secondary-container": "#00a572",
+            "primary-container": "#4d8eff",
+            "primary": "#adc6ff",
+            "primary-fixed-dim": "#adc6ff",
+            "surface": "#0b1326",
+            "on-primary-container": "#00285d",
+            "background": "#0b1326",
+            "surface-container-highest": "#2d3449",
+            "surface-container-low": "#131b2e",
+            "on-error": "#690005",
+            "secondary": "#4edea3",
+            "on-secondary": "#003824",
+            "surface-container-high": "#222a3d",
+            "on-tertiary": "#67001b",
+            "surface-variant": "#2d3449",
+            "on-error-container": "#ffdad6",
+            "on-secondary-fixed": "#002113",
+            "on-primary-fixed-variant": "#004395",
+            "error-container": "#93000a",
+            "secondary-fixed-dim": "#4edea3",
+            "on-secondary-container": "#00311f",
+            "on-tertiary-container": "#5b0017",
+            "on-surface": "#dae2fd",
+            "primary-fixed": "#d8e2ff",
+            "surface-tint": "#adc6ff",
+            "on-secondary-fixed-variant": "#005236",
+            "on-background": "#dae2fd",
+            "on-tertiary-fixed-variant": "#92002a",
+            "on-primary": "#002e6a",
+            "tertiary-fixed-dim": "#ffb2b7",
+            "inverse-primary": "#005ac2",
+            "error": "#ffb4ab",
+            "secondary-fixed": "#6ffbbe",
+            "tertiary-container": "#ff516a",
+            "on-primary-fixed": "#001a42",
+            "surface-bright": "#31394d",
+            "outline-variant": "#424754",
+            "inverse-on-surface": "#283044",
+            "surface-dim": "#0b1326",
+            "surface-container": "#171f33",
+            "inverse-surface": "#dae2fd"
+          },
+          fontFamily: {
+            "headline": ["Inter"],
+            "body": ["Inter"],
+            "label": ["Inter"],
+            "mono": ["JetBrains Mono"]
+          },
+          borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b1326; color: #dae2fd; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  </style>
+</head>
+<body class="bg-background text-on-background overflow-hidden flex h-screen">
+<!-- SideNavBar Anchor -->
+<aside class="fixed left-0 top-0 h-full flex flex-col items-center py-4 z-50 bg-slate-950 docked w-16 bg-slate-950">
+<div class="mb-8">
+<div class="w-10 h-10 bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+</div>
+<nav class="flex flex-col gap-6">
+<div class="group relative flex flex-col items-center">
+<span class="material-symbols-outlined text-slate-500 hover:text-slate-300 transition-all duration-150 ease-in-out cursor-pointer">dashboard</span>
+<span class="text-[11px] font-medium Inter text-slate-500 mt-1">Dashboard</span>
+</div>
+<div class="group relative flex flex-col items-center">
+<span class="material-symbols-outlined text-slate-500 hover:text-slate-300 transition-all duration-150 ease-in-out cursor-pointer">analytics</span>
+<span class="text-[11px] font-medium Inter text-slate-500 mt-1">Candidates</span>
+</div>
+<div class="group relative flex flex-col items-center">
+<span class="material-symbols-outlined text-slate-500 hover:text-slate-300 transition-all duration-150 ease-in-out cursor-pointer">receipt_long</span>
+<span class="text-[11px] font-medium Inter text-slate-500 mt-1">My Trades</span>
+</div>
+<div class="group relative flex flex-col items-center bg-slate-900 text-blue-300 border-l-2 border-blue-400 py-2 w-16">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="text-[11px] font-medium Inter mt-1">Model</span>
+</div>
+<div class="group relative flex flex-col items-center">
+<span class="material-symbols-outlined text-slate-500 hover:text-slate-300 transition-all duration-150 ease-in-out cursor-pointer">settings</span>
+<span class="text-[11px] font-medium Inter text-slate-500 mt-1">Settings</span>
+</div>
+</nav>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-16 flex-1 flex flex-col h-screen bg-surface">
+<!-- TopNavBar Anchor -->
+<header class="flex justify-between items-center w-full px-6 h-12 z-50 bg-slate-950 docked full-width top-0">
+<div class="flex items-center gap-4">
+<span class="text-lg font-bold tracking-tighter text-blue-200">SignalStack</span>
+<div class="h-4 w-px bg-outline-variant/30"></div>
+<span class="text-emerald-400 font-bold text-sm">Active Challenge: Level 2</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-blue-300 cursor-pointer">schedule</span>
+<div class="w-8 h-8 bg-surface-container-highest flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a professional male analyst in dark professional attire with cinematic low key lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsyRusLohsZxinjrLNLUkFPqglvOMNRyhcumLY4b1B6ZBS69RoiVGhXBYfHau3kX-MF9J9JYLszpGKHkLjSsjLhLjWh1rhy2Hs6VkPJgvaWwY0ipQApT7vuhrmNVpDQbsp5G0rg1rWfSGuutkk-n36Pf6miqFdTHznYdcbhH5GSc1aKv3tstAhM6xdA7MCuovgiQ8cxfRNlMSAFtVd2paNVMSQVhL3uKFraCUAvTn8Dn53eiZsDL_VbGfGUyyDBnKeyQZdQ6dIpTM"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto p-6 no-scrollbar">
+<!-- Asymmetric Header Layout -->
+<div class="grid grid-cols-12 gap-0.5 bg-outline-variant/10 mb-6">
+<div class="col-span-12 md:col-span-8 p-6 bg-surface-container-low">
+<div class="flex flex-col">
+<span class="text-xs uppercase tracking-[0.2em] text-on-surface-variant mb-2">Quant Research Terminal</span>
+<h1 class="text-4xl font-black text-on-surface mb-4">Neural Architecture <span class="text-primary">v4.2.0-Alpha</span></h1>
+<div class="flex gap-8">
+<div class="flex flex-col">
+<span class="text-[10px] text-outline uppercase">Last Retrain</span>
+<span class="font-mono text-lg text-primary">2023.10.24 14:02:11</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-outline uppercase">Train/Test Split</span>
+<span class="font-mono text-lg text-on-surface">80:20 <span class="text-xs text-outline">(Walk-Forward)</span></span>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-outline uppercase">Target Metric</span>
+<span class="font-mono text-lg text-secondary">0.682 <span class="text-xs text-outline">ROC AUC</span></span>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 md:col-span-4 p-6 bg-surface-container flex flex-col justify-center">
+<div class="bg-surface-container-highest p-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-xs text-outline uppercase">Model Status</span>
+<span class="text-secondary font-bold text-xl uppercase tracking-wider">Operational</span>
+</div>
+<span class="material-symbols-outlined text-secondary text-4xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Main Diagnostics Grid -->
+<div class="grid grid-cols-12 gap-0.5 bg-outline-variant/10">
+<!-- Equity Curve (Large) -->
+<div class="col-span-12 lg:col-span-9 bg-surface-container-low p-6">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="text-sm font-bold uppercase tracking-widest text-on-surface">Walk-Forward Equity Curve</h2>
+<p class="text-xs text-outline">Backtest performance vs Benchmarks (SPY/BTC)</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 bg-primary"></div>
+<span class="text-[10px] font-mono text-primary">STRAT_V4</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 bg-outline"></div>
+<span class="text-[10px] font-mono text-outline">BENCH_01</span>
+</div>
+</div>
+</div>
+<div class="relative h-[300px] w-full bg-surface-container-lowest/50 flex items-end overflow-hidden">
+<!-- Simulated Line Chart with SVG -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<polyline fill="none" points="0,280 50,260 100,270 150,230 200,210 250,240 300,180 350,160 400,170 450,130 500,110 550,120 600,90 650,70 700,100 750,50 800,60 850,20 900,40 1000,10" stroke="#adc6ff" stroke-width="2" style="vector-effect: non-scaling-stroke;"></polyline>
+<polyline fill="none" points="0,290 100,285 200,280 300,275 400,270 500,265 600,260 700,255 800,250 900,245 1000,240" stroke="#424754" stroke-dasharray="4" stroke-width="1" style="vector-effect: non-scaling-stroke;"></polyline>
+</svg>
+<!-- Data Tooltip Sample -->
+<div class="absolute left-[75%] top-[50px] bg-surface-bright border border-outline/20 p-2 z-10">
+<span class="text-[9px] text-outline block mb-1">2023-Q4-08</span>
+<span class="font-mono text-sm text-secondary block">+42.8% Cumulative</span>
+</div>
+</div>
+</div>
+<!-- Metric Sidebar (High Density) -->
+<div class="col-span-12 lg:col-span-3 bg-surface-container p-6 space-y-6">
+<div class="space-y-1">
+<span class="text-[10px] text-outline uppercase">Sharpe Ratio</span>
+<div class="flex justify-between items-baseline">
+<span class="font-mono text-2xl font-bold text-on-surface">3.12</span>
+<span class="text-[10px] text-secondary font-mono">▲ 0.14</span>
+</div>
+</div>
+<div class="space-y-1">
+<span class="text-[10px] text-outline uppercase">Profit Factor</span>
+<div class="flex justify-between items-baseline">
+<span class="font-mono text-2xl font-bold text-on-surface">1.84</span>
+<span class="text-[10px] text-outline font-mono">STABLE</span>
+</div>
+</div>
+<div class="space-y-1">
+<span class="text-[10px] text-outline uppercase">Max Drawdown</span>
+<div class="flex justify-between items-baseline">
+<span class="font-mono text-2xl font-bold text-tertiary">-8.2%</span>
+<span class="text-[10px] text-outline font-mono">RECOVERY: 12d</span>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/20">
+<button class="w-full bg-primary-container text-on-primary-container py-3 font-bold uppercase text-xs tracking-widest flex items-center justify-center gap-2 hover:brightness-105">
+<span class="material-symbols-outlined text-sm">rocket_launch</span>
+              Deploy Version
+            </button>
+</div>
+</div>
+<!-- Rolling IC (Bar Chart) -->
+<div class="col-span-12 md:col-span-6 bg-surface-container p-6">
+<h2 class="text-sm font-bold uppercase tracking-widest text-on-surface mb-6">Rolling Information Coefficient</h2>
+<div class="flex items-end gap-1 h-32 bg-surface-container-low/30">
+<!-- Simulated Bar Chart -->
+<div class="flex-1 bg-secondary/30 h-[40%]"></div>
+<div class="flex-1 bg-secondary/50 h-[60%]"></div>
+<div class="flex-1 bg-secondary/40 h-[50%]"></div>
+<div class="flex-1 bg-tertiary/40 h-[20%]"></div>
+<div class="flex-1 bg-secondary/60 h-[80%]"></div>
+<div class="flex-1 bg-secondary/70 h-[90%]"></div>
+<div class="flex-1 bg-secondary/50 h-[65%]"></div>
+<div class="flex-1 bg-secondary/40 h-[55%]"></div>
+<div class="flex-1 bg-tertiary/60 h-[30%]"></div>
+<div class="flex-1 bg-secondary/50 h-[70%]"></div>
+<div class="flex-1 bg-secondary/60 h-[75%]"></div>
+<div class="flex-1 bg-secondary/40 h-[45%]"></div>
+</div>
+<div class="flex justify-between mt-2 font-mono text-[9px] text-outline">
+<span>START_PERIOD</span>
+<span>MEAN IC: 0.122</span>
+<span>END_PERIOD</span>
+</div>
+</div>
+<!-- Calibration Plot (Reliability) -->
+<div class="col-span-12 md:col-span-6 bg-surface-container-low p-6">
+<h2 class="text-sm font-bold uppercase tracking-widest text-on-surface mb-6">Calibration Plot</h2>
+<div class="relative h-32 w-full border-l border-b border-outline-variant/30 overflow-hidden">
+<svg class="absolute inset-0 w-full h-full">
+<line stroke="#424754" stroke-dasharray="2" stroke-width="1" x1="0" x2="100%" y1="100%" y2="0"></line>
+<path d="M0,128 Q150,110 300,50 T600,0" fill="none" stroke="#adc6ff" stroke-width="2"></path>
+</svg>
+<div class="absolute bottom-2 right-2 text-[9px] font-mono text-outline">Confidence vs Accuracy</div>
+</div>
+</div>
+<!-- Feature Importance (Horizontal Bars) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-low p-6">
+<h2 class="text-sm font-bold uppercase tracking-widest text-on-surface mb-6">Feature Importance (SHAP)</h2>
+<div class="space-y-4">
+<div class="space-y-1">
+<div class="flex justify-between font-mono text-[10px] text-outline uppercase">
+<span>Volatility_24h</span>
+<span>0.342</span>
+</div>
+<div class="h-2 bg-surface-container-highest">
+<div class="h-full bg-primary" style="width: 85%;"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-mono text-[10px] text-outline uppercase">
+<span>Orderflow_Imbalance</span>
+<span>0.281</span>
+</div>
+<div class="h-2 bg-surface-container-highest">
+<div class="h-full bg-primary" style="width: 70%;"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-mono text-[10px] text-outline uppercase">
+<span>Funding_Rate_Divergence</span>
+<span>0.154</span>
+</div>
+<div class="h-2 bg-surface-container-highest">
+<div class="h-full bg-primary" style="width: 38%;"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between font-mono text-[10px] text-outline uppercase">
+<span>Relative_Volume_Z</span>
+<span>0.098</span>
+</div>
+<div class="h-2 bg-surface-container-highest">
+<div class="h-full bg-primary" style="width: 24%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Epoch Level Performance (Table) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container p-6">
+<h2 class="text-sm font-bold uppercase tracking-widest text-on-surface mb-6">Epoch Execution Log</h2>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-mono text-xs border-collapse">
+<thead>
+<tr class="bg-surface-container-highest/50 text-outline uppercase text-[10px] tracking-widest">
+<th class="p-3">Epoch</th>
+<th class="p-3">Loss (Train)</th>
+<th class="p-3">Loss (Val)</th>
+<th class="p-3">Accuracy</th>
+<th class="p-3">Recall</th>
+<th class="p-3">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="bg-surface-container-low/20">
+<td class="p-3 text-on-surface">#256</td>
+<td class="p-3">0.00421</td>
+<td class="p-3">0.00512</td>
+<td class="p-3 text-secondary">0.712</td>
+<td class="p-3">0.684</td>
+<td class="p-3"><span class="bg-secondary-container/20 text-secondary px-2 py-0.5 text-[9px] font-bold">SAVED</span></td>
+</tr>
+<tr>
+<td class="p-3 text-on-surface">#255</td>
+<td class="p-3">0.00425</td>
+<td class="p-3">0.00518</td>
+<td class="p-3">0.709</td>
+<td class="p-3">0.679</td>
+<td class="p-3"><span class="bg-outline-variant/20 text-outline px-2 py-0.5 text-[9px] font-bold">PASS</span></td>
+</tr>
+<tr class="bg-surface-container-low/20">
+<td class="p-3 text-on-surface">#254</td>
+<td class="p-3">0.00431</td>
+<td class="p-3">0.00524</td>
+<td class="p-3">0.705</td>
+<td class="p-3">0.675</td>
+<td class="p-3"><span class="bg-outline-variant/20 text-outline px-2 py-0.5 text-[9px] font-bold">PASS</span></td>
+</tr>
+<tr>
+<td class="p-3 text-on-surface">#253</td>
+<td class="p-3">0.00445</td>
+<td class="p-3">0.00542</td>
+<td class="p-3">0.698</td>
+<td class="p-3">0.662</td>
+<td class="p-3"><span class="bg-outline-variant/20 text-outline px-2 py-0.5 text-[9px] font-bold">PASS</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- Execution Status Bar -->
+<footer class="h-8 bg-surface-container-highest border-t border-outline-variant/10 flex items-center justify-between px-4 font-mono text-[9px] text-outline uppercase tracking-wider">
+<div class="flex gap-4">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Live API: Connected</span>
+<span>Lat: 12ms</span>
+</div>
+<div class="flex gap-4">
+<span>Worker_ID: SS-7721-B</span>
+<span class="text-on-surface">System Load: 14.2%</span>
+</div>
+</footer>
+</main>
+</body></html>

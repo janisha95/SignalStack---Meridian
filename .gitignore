@@ -1,0 +1,50 @@
+# macOS
+.DS_Store
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# databases
+*.db
+*.sqlite
+*.sqlite3
+
+# models / artifacts
+models/
+checkpoints/
+artifacts/
+output/
+runs/
+
+# python
+__pycache__/
+*.pyc
+
+# node
+node_modules/
+.next/
+dist/
+build/
+
+# large data / docs / archives
+data/
+*.parquet
+*.zip
+*.wal
+
+# models / training artifacts
+models/
+Implementation Docs/
+
+# local app/repo + deploy junk
+.vercel/
+ui/signalstack-app/
+
+# logs
+logs/
+*.log
+
+# macOS junk everywhere
+**/.DS_Store

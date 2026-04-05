@@ -1,0 +1,111 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "Meridian Factor Registry — toggle feature groups on/off for training experiments",
+    "usage": "Load this JSON in any training script. Filter features by enabled groups.",
+    "last_updated": "2026-03-26"
+  },
+  
+  "groups": {
+    "technical_core": {
+      "enabled": true,
+      "description": "Core technical indicators (ADX, BB, MA alignment)",
+      "features": [
+        "adx", "directional_conviction", "bb_position", "ma_alignment",
+        "dist_from_ma20_atr", "ma_death_cross_proximity"
+      ]
+    },
+    
+    "momentum": {
+      "enabled": true,
+      "description": "Price momentum at multiple horizons",
+      "features": [
+        "momentum_acceleration", "momentum_impulse", "rs_vs_spy_10d",
+        "rs_vs_spy_20d", "rs_momentum"
+      ]
+    },
+    
+    "lagged_returns": {
+      "enabled": true,
+      "description": "Raw lagged return features (Jansen's #1 alpha factor)",
+      "features": ["ret_1d", "ret_5d", "ret_10d", "ret_20d"]
+    },
+    
+    "volume": {
+      "enabled": true,
+      "description": "Volume-based signals",
+      "features": [
+        "volume_participation", "volume_flow_direction", "effort_vs_result",
+        "volume_climax", "downside_volume_dominance"
+      ]
+    },
+    
+    "volatility": {
+      "enabled": true,
+      "description": "Volatility and risk indicators",
+      "features": ["volatility_rank", "volatility_acceleration", "shock_magnitude"]
+    },
+    
+    "structure": {
+      "enabled": true,
+      "description": "Price structure and Wyckoff analysis",
+      "features": [
+        "wyckoff_phase", "phase_confidence", "phase_age_days",
+        "damage_depth", "rollover_strength", "structure_quality",
+        "pullback_score", "wick_rejection"
+      ]
+    },
+    
+    "composite_scores": {
+      "enabled": true,
+      "description": "Composite scoring factors",
+      "features": ["leadership_score", "setup_score"]
+    },
+    
+    "macro": {
+      "enabled": true,
+      "description": "Market-wide regime indicators",
+      "features": ["market_breadth", "vix_regime"]
+    },
+    
+    "options": {
+      "enabled": false,
+      "description": "Options flow data (100% NaN currently — disabled)",
+      "features": ["options_pcr", "options_unusual_vol"]
+    },
+    
+    "volume_misc": {
+      "enabled": false,
+      "description": "Low-IC volume features (dropped by factor evaluation)",
+      "features": ["vol_bias"]
+    },
+    
+    "fundamental": {
+      "enabled": true,
+      "description": "Fundamental data from yfinance (Jansen gap #1)",
+      "features": [
+        "market_cap_log", "pe_ratio", "pb_ratio", "ps_ratio",
+        "dividend_yield", "profit_margin", "roe", "debt_to_equity",
+        "beta", "avg_volume_log"
+      ]
+    },
+    
+    "sector": {
+      "enabled": true,
+      "description": "Sector categorical encoding (Jansen gap #2)",
+      "features": ["sector_encoded"]
+    },
+    
+    "time_features": {
+      "enabled": true,
+      "description": "Calendar/seasonal features (Jansen gap #3)",
+      "features": ["month_of_year", "day_of_week", "quarter_end", "days_to_month_end"]
+    },
+    
+    "s1_missing": {
+      "enabled": false,
+      "description": "S1 features missing from Meridian (add if needed)",
+      "features": ["rsi14", "bb_width", "minus_di", "dist_to_pp"]
+    }
+  }
+}

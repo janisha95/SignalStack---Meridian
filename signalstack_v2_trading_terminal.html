@@ -1,0 +1,161 @@
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+.ss{font-family:var(--font-sans);color:var(--color-text-primary)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 0 16px;border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:16px}
+.topbar h2{font-size:18px;font-weight:500;display:flex;align-items:center;gap:8px}
+.topbar .dot{width:8px;height:8px;border-radius:50%}
+.topbar .meta{font-size:12px;color:var(--color-text-secondary);display:flex;gap:16px;align-items:center}
+.tabs{display:flex;gap:4px;margin-bottom:16px}
+.tab{padding:6px 14px;border-radius:var(--border-radius-md);font-size:13px;cursor:pointer;border:0.5px solid transparent;background:transparent;color:var(--color-text-secondary)}
+.tab.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500;border-color:var(--color-border-tertiary)}
+.kpi{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.kpi-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.kpi-card .l{font-size:11px;color:var(--color-text-tertiary);letter-spacing:0.3px}
+.kpi-card .v{font-size:18px;font-weight:500;font-family:var(--font-mono);margin-top:2px}
+.kpi-card .s{font-size:11px;margin-top:1px}
+.g{color:var(--color-text-success)}.r{color:var(--color-text-danger)}.a{color:var(--color-text-warning)}
+.section{margin-bottom:16px}
+.section-title{font-size:14px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.section-title .badge{font-size:11px;padding:2px 8px;background:var(--color-background-info);color:var(--color-text-info);border-radius:var(--border-radius-md)}
+.gauges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gauge{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:12px 14px}
+.gauge .gt{font-size:12px;color:var(--color-text-secondary);margin-bottom:8px}
+.gauge .bar{height:6px;background:var(--color-background-tertiary);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.gauge .fill{height:100%;border-radius:3px;transition:width .3s}
+.gauge .nums{display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-tertiary)}
+.gauge .pct{font-family:var(--font-mono);font-size:16px;font-weight:500;margin-bottom:4px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px}
+.pick-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.pick-row:last-child{border-bottom:none}
+.pick-row .rank{font-size:11px;color:var(--color-text-tertiary);width:18px;text-align:right}
+.pick-row .tkr{font-family:var(--font-mono);font-weight:500;font-size:14px;width:52px}
+.pick-row .info{flex:1;font-size:11px;color:var(--color-text-secondary);line-height:1.4}
+.pick-row .score{font-family:var(--font-mono);font-size:13px;font-weight:500;width:48px;text-align:right}
+.pick-row .action{width:28px;height:28px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;border:0.5px solid var(--color-border-tertiary);background:transparent;transition:all .15s}
+.pick-row .action:hover{background:var(--color-background-info);border-color:var(--color-border-info)}
+.pick-row .action.selected{background:var(--color-background-success);border-color:var(--color-border-success)}
+.dir{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500}
+.dir-l{background:var(--color-background-success);color:var(--color-text-success)}
+.dir-s{background:var(--color-background-danger);color:var(--color-text-danger)}
+.sizer{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.6}
+.sizer .row{display:flex;justify-content:space-between}
+.sizer .hl{font-weight:500;font-family:var(--font-mono)}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rule{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);font-size:12px}
+.rule .chk{font-family:var(--font-mono);font-size:12px}
+.eq-chart{height:80px;display:flex;align-items:flex-end;gap:2px;padding:4px 0;margin-top:8px}
+.eq-bar{border-radius:2px 2px 0 0;flex:1;min-width:0;opacity:0.8}
+.footer{font-size:11px;color:var(--color-text-tertiary);text-align:center;padding-top:12px;border-top:0.5px solid var(--color-border-tertiary);margin-top:8px}
+</style>
+<div class="ss">
+<div class="topbar">
+  <h2><span style="font-weight:500">Signal</span><span style="color:var(--color-text-success);font-weight:500">Stack</span></h2>
+  <div class="meta">
+    <span><span class="dot" style="background:var(--color-text-success);display:inline-block;vertical-align:middle;margin-right:4px"></span>FTMO Challenge</span>
+    <span>Day 8 / 30</span>
+    <span style="font-family:var(--font-mono)">5:15 PM ET</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active">Dashboard</div>
+  <div class="tab">Candidates</div>
+  <div class="tab">My trades</div>
+  <div class="tab">Model</div>
+  <div class="tab">Settings</div>
+</div>
+
+<div class="kpi">
+  <div class="kpi-card"><div class="l">Balance</div><div class="v g">$103,420</div><div class="s" style="color:var(--color-text-secondary)">+3.42%</div></div>
+  <div class="kpi-card"><div class="l">Today</div><div class="v g">+$680</div><div class="s" style="color:var(--color-text-secondary)">+0.68%</div></div>
+  <div class="kpi-card"><div class="l">Positions</div><div class="v">7 / 10</div><div class="s a">Heat 4.2%</div></div>
+  <div class="kpi-card"><div class="l">To target</div><div class="v a">$6,580</div><div class="s" style="color:var(--color-text-secondary)">65.8% left</div></div>
+  <div class="kpi-card"><div class="l">Win rate</div><div class="v g">58%</div><div class="s" style="color:var(--color-text-secondary)">14W / 10L</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Risk gauges</div>
+  <div class="gauges">
+    <div class="gauge">
+      <div class="gt">Daily loss limit</div>
+      <div class="pct g">9%</div>
+      <div class="bar"><div class="fill" style="width:9%;background:var(--color-text-success)"></div></div>
+      <div class="nums"><span>$450 used</span><span>$5,000</span></div>
+    </div>
+    <div class="gauge">
+      <div class="gt">Max drawdown</div>
+      <div class="pct g">12%</div>
+      <div class="bar"><div class="fill" style="width:12%;background:var(--color-text-success)"></div></div>
+      <div class="nums"><span>$1,200 peak DD</span><span>$10,000</span></div>
+    </div>
+    <div class="gauge">
+      <div class="gt">Portfolio heat</div>
+      <div class="pct a">52%</div>
+      <div class="bar"><div class="fill" style="width:52%;background:var(--color-text-warning)"></div></div>
+      <div class="nums"><span>4.2% active</span><span>8% cap</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="cols">
+  <div class="card">
+    <div class="section-title">Top LONG candidates <span class="badge">you choose</span></div>
+    <div class="pick-row"><div class="rank">1</div><div class="tkr g">NVDA</div><div class="info"><span class="dir dir-l">LONG</span> Trending · Tech · $924<br>Residual +2.8% · Beta 1.15</div><div class="score g">+2.8%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">2</div><div class="tkr g">RRC</div><div class="info"><span class="dir dir-l">LONG</span> Trending · Energy · $19.4<br>Residual +2.1% · Beta 0.82</div><div class="score g">+2.1%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">3</div><div class="tkr g">WEN</div><div class="info"><span class="dir dir-l">LONG</span> Trending · Cons.Cyc · $7.11<br>Residual +1.7% · Beta 0.65</div><div class="score g">+1.7%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">4</div><div class="tkr g">CAVA</div><div class="info"><span class="dir dir-l">LONG</span> Trending · Cons.Cyc · $95.2<br>Residual +1.4% · Beta 1.05</div><div class="score g">+1.4%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">5</div><div class="tkr g">BXP</div><div class="info"><span class="dir dir-l">LONG</span> Trending · RE · $52.8<br>Residual +1.2% · Beta 0.91</div><div class="score g">+1.2%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Top SHORT candidates <span class="badge">you choose</span></div>
+    <div class="pick-row"><div class="rank">1</div><div class="tkr r">SEDG</div><div class="info"><span class="dir dir-s">SHORT</span> Choppy · Tech · $72.5<br>Residual -1.9% · Beta 1.45</div><div class="score r">-1.9%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">2</div><div class="tkr r">MHK</div><div class="info"><span class="dir dir-s">SHORT</span> Volatile · Ind. · $138<br>Residual -1.5% · Beta 1.22</div><div class="score r">-1.5%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">3</div><div class="tkr r">ALM</div><div class="info"><span class="dir dir-s">SHORT</span> Choppy · Materials · $24.3<br>Residual -1.3% · Beta 0.78</div><div class="score r">-1.3%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">4</div><div class="tkr r">STLA</div><div class="info"><span class="dir dir-s">SHORT</span> Trending · Cons.Cyc · $11.2<br>Residual -1.1% · Beta 1.08</div><div class="score r">-1.1%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+    <div class="pick-row"><div class="rank">5</div><div class="tkr r">SNAP</div><div class="info"><span class="dir dir-s">SHORT</span> Volatile · Tech · $8.4<br>Residual -0.9% · Beta 1.55</div><div class="score r">-0.9%</div><div class="action" onclick="this.classList.toggle('selected')">+</div></div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:12px">
+  <div class="section-title">Position sizer <span style="font-size:11px;color:var(--color-text-tertiary)">select candidates above, sizing computed instantly</span></div>
+  <div class="sizer">
+    <div class="row"><span>NVDA LONG @ $924.00</span><span class="hl g">APPROVED</span></div>
+    <div class="row"><span>Stop $898.52 (2× ATR)</span><span>TP $975.96 (4× ATR)</span></div>
+    <div class="row"><span>Risk/share: $25.48</span><span>Shares: <span class="hl">19</span></span></div>
+    <div class="row"><span>Risk: $484 (<span class="hl">0.48%</span>)</span><span>Value: $17,556</span></div>
+    <div class="row" style="margin-top:4px;padding-top:4px;border-top:0.5px solid var(--color-border-tertiary)"><span style="color:var(--color-text-secondary)">Sector (Tech): 1/3</span><span style="color:var(--color-text-success)">Daily budget: $4,516 remaining</span></div>
+  </div>
+</div>
+
+<div class="cols" style="margin-top:12px">
+  <div class="card">
+    <div class="section-title">FTMO compliance</div>
+    <div class="rules">
+      <div class="rule"><span>Daily loss &lt; 5%</span><span class="chk g">0.9%</span></div>
+      <div class="rule"><span>Drawdown &lt; 10%</span><span class="chk g">1.2%</span></div>
+      <div class="rule"><span>Target 10%</span><span class="chk a">3.4%</span></div>
+      <div class="rule"><span>Min 4 days</span><span class="chk g">8 days</span></div>
+      <div class="rule"><span>Best day &lt; 50%</span><span class="chk g">32%</span></div>
+      <div class="rule"><span>Positions ≤ 10</span><span class="chk g">7</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-title">Equity curve</div>
+    <div class="eq-chart">
+      <div class="eq-bar" style="height:35%;background:var(--color-text-success)"></div>
+      <div class="eq-bar" style="height:52%;background:var(--color-text-success)"></div>
+      <div class="eq-bar" style="height:18%;background:var(--color-text-danger)"></div>
+      <div class="eq-bar" style="height:68%;background:var(--color-text-success)"></div>
+      <div class="eq-bar" style="height:45%;background:var(--color-text-success)"></div>
+      <div class="eq-bar" style="height:12%;background:var(--color-text-danger)"></div>
+      <div class="eq-bar" style="height:80%;background:var(--color-text-success)"></div>
+      <div class="eq-bar" style="height:55%;background:var(--color-text-success)"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-tertiary);margin-top:4px"><span>Day 1</span><span>Day 8</span></div>
+  </div>
+</div>
+
+<div class="footer">SignalStack Meridian · Pipeline ran 5:02 PM ET · 3,313 tickers · 34 factors · Model: mock (training tomorrow)</div>
+</div>

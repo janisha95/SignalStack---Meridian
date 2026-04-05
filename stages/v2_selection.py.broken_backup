@@ -1,0 +1,517 @@
+#!/usr/bin/env python3
+"""Meridian Stage 5 — Shortlist Selection.
+
+Original spec: rank by residual_alpha (beta-stripped idiosyncratic return).
+TCN wiring: blend final_score = 0.60 * factor_rank + 0.40 * tcn_score (Option D for shorts).
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sqlite3
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from stages.factors import now_et_iso, today_et
+from stages.v2_prefilter import PrefilterError, run_prefilter
+from stages.tcn_scorer import TCNScorer
+
+
+# ── Constants ────────────────────────────────────────────────────────────────
+
+STAGE_NAME = "selection"
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DB_PATH = ROOT / "data" / "v2_universe.db"
+DEFAULT_TOP_N = 30
+BETA_WINDOW = 60       # days for rolling OLS beta
+BETA_CLAMP = 3.0       # cap beta to prevent inverse ETFs dominating
+MIN_RESIDUAL = 0.001   # filter near-zero residual alphas (noise)
+
+# Blend weights — Option D (TCN inverted for shorts)
+# LONG:  final_score = 0.60 * factor_rank + 0.40 * tcn_score
+# SHORT: final_score = 0.60 * factor_rank + 0.40 * (1.0 - tcn_score)
+FACTOR_BLEND = 0.60
+TCN_BLEND    = 0.40
+
+_TCN_SCORER: TCNScorer | None = None
+
+
+# ── Errors ───────────────────────────────────────────────────────────────────
+
+class SelectionError(RuntimeError):
+    pass
+
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+
+def _log(msg: str) -> None:
+    print(f"[{STAGE_NAME}] {msg}", flush=True)
+
+
+# ── DB helpers ───────────────────────────────────────────────────────────────
+
+def _connect(db_path: Path) -> sqlite3.Connection:
+    if not db_path.exists():
+        raise SelectionError(f"DB not found: {db_path}")
+    con = sqlite3.connect(str(db_path), timeout=30)
+    con.row_factory = sqlite3.Row
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("PRAGMA busy_timeout=5000")
+    return con
+
+
+def _table_exists(con: sqlite3.Connection, name: str) -> bool:
+    return con.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)
+    ).fetchone() is not None
+
+
+# ── TCN scorer ───────────────────────────────────────────────────────────────
+
+def _get_tcn_scorer() -> TCNScorer | None:
+    global _TCN_SCORER
+    if _TCN_SCORER is None:
+        try:
+            _TCN_SCORER = TCNScorer()
+        except FileNotFoundError:
+            _log("TCN model not found — using tcn_score=0.5 (neutral) for all tickers")
+            return None
+    return _TCN_SCORER
+
+
+# ── Beta computation (Step 1 of spec) ────────────────────────────────────────
+
+def compute_beta(ticker_rets: pd.Series, spy_rets: pd.Series, window: int = BETA_WINDOW) -> float:
+    """OLS beta: slope of ticker_rets ~ spy_rets over the last `window` days."""
+    if len(ticker_rets) < window or len(spy_rets) < window:
+        return 1.0
+    t = ticker_rets.iloc[-window:].astype(float)
+    s = spy_rets.iloc[-window:].astype(float)
+    var = float(s.var())
+    if var == 0 or np.isnan(var):
+        return 1.0
+    beta = float(t.cov(s)) / var
+    if np.isnan(beta) or np.isinf(beta):
+        return 1.0
+    return float(np.clip(beta, -BETA_CLAMP, BETA_CLAMP))
+
+
+# ── Return history loader ────────────────────────────────────────────────────
+
+def _load_return_map(db_path: Path, tickers: list[str]) -> dict[str, pd.Series]:
+    """Load daily % returns for each ticker from daily_bars (for beta computation)."""
+    if not tickers:
+        return {}
+    con = _connect(db_path)
+    frames: list[pd.DataFrame] = []
+    try:
+        chunk = 900
+        for i in range(0, len(tickers), chunk):
+            batch = tickers[i : i + chunk]
+            ph = ",".join("?" * len(batch))
+            sql = f"""
+                WITH ranked AS (
+                    SELECT ticker, date, close,
+                           ROW_NUMBER() OVER (PARTITION BY ticker ORDER BY date DESC) AS rn
+                    FROM daily_bars WHERE ticker IN ({ph})
+                )
+                SELECT ticker, date, close FROM ranked
+                WHERE rn <= ? ORDER BY ticker ASC, date ASC
+            """
+            frames.append(pd.read_sql_query(sql, con, params=[*batch, BETA_WINDOW + 2]))
+    finally:
+        con.close()
+    full = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["ticker", "date", "close"])
+    out: dict[str, pd.Series] = {}
+    for ticker, grp in full.groupby("ticker", sort=False):
+        close = pd.to_numeric(grp["close"], errors="coerce").astype(float)
+        out[str(ticker).upper()] = close.pct_change().dropna().reset_index(drop=True)
+    return out
+
+
+# ── Predictions loader ───────────────────────────────────────────────────────
+
+def _load_prefilter_frame(db_path: Path) -> pd.DataFrame:
+    con = _connect(db_path)
+    try:
+        if _table_exists(con, "prefilter_results"):
+            row = con.execute("SELECT MAX(date) AS d FROM prefilter_results").fetchone()
+            date = str(row["d"]) if row and row["d"] else None
+            if date:
+                df = pd.read_sql_query(
+                    "SELECT ticker, regime, price, dollar_volume, bars_available, atr_pct, adx, sector"
+                    " FROM prefilter_results WHERE date=? ORDER BY ticker ASC",
+                    con, params=(date,),
+                )
+                if not df.empty:
+                    df.attrs["date"] = date
+                    return df
+    finally:
+        con.close()
+    return run_prefilter(db_path, dry_run=True)
+
+
+def _mock_predictions(db_path: Path) -> pd.DataFrame:
+    prefilter = _load_prefilter_frame(db_path)
+    if prefilter.empty:
+        raise SelectionError("Prefilter empty — cannot generate mock predictions")
+    np.random.seed(42)
+    df = prefilter.copy()
+    df["predicted_return"] = np.random.normal(0, 0.03, len(df))
+    df["ticker"] = df["ticker"].astype(str).str.upper()
+    return df
+
+
+def _load_predictions(db_path: Path, *, mock: bool) -> pd.DataFrame:
+    if mock:
+        return _mock_predictions(db_path)
+    con = _connect(db_path)
+    try:
+        if not _table_exists(con, "predictions_daily"):
+            raise SelectionError("predictions_daily missing — use --mock until Stage 4 runs")
+        row = con.execute("SELECT MAX(date) AS d FROM predictions_daily").fetchone()
+        as_of = str(row["d"]) if row and row["d"] else None
+        if not as_of:
+            raise SelectionError("predictions_daily is empty")
+        df = pd.read_sql_query(
+            "SELECT * FROM predictions_daily WHERE date=? ORDER BY ticker ASC",
+            con, params=(as_of,),
+        )
+        df["ticker"] = df["ticker"].astype(str).str.upper()
+        return df
+    finally:
+        con.close()
+
+
+# ── SHAP factors ─────────────────────────────────────────────────────────────
+
+def _extract_shap(row: pd.Series) -> str | None:
+    pairs = [
+        (str(col).replace("shap_", "", 1), float(val))
+        for col, val in row.items()
+        if str(col).startswith("shap_") and not pd.isna(val)
+    ]
+    if not pairs:
+        return None
+    pairs.sort(key=lambda x: abs(x[1]), reverse=True)
+    return json.dumps([f"{n}:{v:+.4f}" for n, v in pairs[:3]])
+
+
+# ── DB write ─────────────────────────────────────────────────────────────────
+
+def _ensure_table(con: sqlite3.Connection) -> None:
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS shortlist_daily (
+            date             TEXT NOT NULL,
+            ticker           TEXT NOT NULL,
+            direction        TEXT NOT NULL,
+            predicted_return REAL,
+            beta             REAL,
+            market_component REAL,
+            residual_alpha   REAL,
+            factor_rank      REAL,
+            tcn_score        REAL,
+            final_score      REAL,
+            rank             INTEGER,
+            regime           TEXT,
+            sector           TEXT,
+            price            REAL,
+            top_shap_factors TEXT,
+            PRIMARY KEY (date, ticker)
+        )
+    """)
+    existing = {r[1] for r in con.execute("PRAGMA table_info(shortlist_daily)").fetchall()}
+    for col, typ in {
+        "market_component": "REAL",
+        "factor_rank":      "REAL",
+        "tcn_score":        "REAL",
+        "final_score":      "REAL",
+        "top_shap_factors": "TEXT",
+    }.items():
+        if col not in existing:
+            con.execute(f"ALTER TABLE shortlist_daily ADD COLUMN {col} {typ}")
+    con.commit()
+
+
+def _write(con: sqlite3.Connection, frame: pd.DataFrame, run_date: str) -> int:
+    _ensure_table(con)
+    con.execute("DELETE FROM shortlist_daily WHERE date=?", (run_date,))
+    rows = [
+        (
+            run_date,
+            r["ticker"],
+            r["direction"],
+            None if pd.isna(r["predicted_return"]) else float(r["predicted_return"]),
+            None if pd.isna(r["beta"])             else float(r["beta"]),
+            None if pd.isna(r["market_component"]) else float(r["market_component"]),
+            None if pd.isna(r["residual_alpha"])   else float(r["residual_alpha"]),
+            None if pd.isna(r["factor_rank"])      else float(r["factor_rank"]),
+            None if pd.isna(r["tcn_score"])        else float(r["tcn_score"]),
+            None if pd.isna(r["final_score"])      else float(r["final_score"]),
+            None if pd.isna(r["rank"])             else int(r["rank"]),
+            r["regime"],
+            r["sector"],
+            None if pd.isna(r["price"])            else float(r["price"]),
+            r["top_shap_factors"],
+        )
+        for _, r in frame.iterrows()
+    ]
+    con.executemany("""
+        INSERT OR REPLACE INTO shortlist_daily (
+            date, ticker, direction,
+            predicted_return, beta, market_component, residual_alpha,
+            factor_rank, tcn_score, final_score, rank,
+            regime, sector, price, top_shap_factors
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """, rows)
+    con.execute(
+        "INSERT OR REPLACE INTO cache_meta (key, value, updated_at) VALUES (?,?,?)",
+        ("selection_run_at", now_et_iso(), now_et_iso()),
+    )
+    con.commit()
+    return len(rows)
+
+
+# ── Main selection logic ──────────────────────────────────────────────────────
+
+def select_shortlist(
+    *,
+    db_path: Path,
+    top_n: int = DEFAULT_TOP_N,
+    min_residual: float = MIN_RESIDUAL,
+    show_all: bool = False,
+    dry_run: bool = False,
+    debug_ticker: str | None = None,
+    mock: bool = False,
+) -> pd.DataFrame:
+    t0 = time.time()
+    _log("Starting Stage 5 — spec: residual_alpha ranking + TCN blend (Option D for shorts)")
+
+    # ── Load predictions ──────────────────────────────────────────────────────
+    predictions = _load_predictions(db_path, mock=mock)
+    if predictions.empty:
+        raise SelectionError("Predictions frame is empty")
+    predictions["ticker"] = predictions["ticker"].astype(str).str.upper()
+    _log(f"Input: {len(predictions)} tickers")
+
+    if "SPY" not in set(predictions["ticker"]):
+        raise SelectionError("SPY prediction missing from predictions_daily")
+
+    # Determine run date from predictions table (or today if mock)
+    run_date = (
+        str(predictions["date"].dropna().max())
+        if "date" in predictions.columns and not predictions["date"].dropna().empty
+        else today_et()
+    )
+    _log(f"Run date: {run_date}")
+
+    # ── Step 1: SPY benchmark ─────────────────────────────────────────────────
+    spy_pred = float(predictions.loc[predictions["ticker"] == "SPY", "predicted_return"].iloc[0])
+    _log(f"SPY predicted_return = {spy_pred:+.4f}")
+
+    # ── Step 1: Load return history for beta ──────────────────────────────────
+    all_tickers = sorted(predictions["ticker"].tolist())
+    _log("Loading 60-day return history for beta computation...")
+    returns_map = _load_return_map(db_path, all_tickers)
+    spy_rets = returns_map.get("SPY")
+    if spy_rets is None or spy_rets.empty:
+        raise SelectionError("SPY return history missing from daily_bars")
+    _log(f"Beta inputs loaded in {time.time() - t0:.1f}s")
+
+    # ── TCN scores: P(bullish) per ticker ─────────────────────────────────────
+    tcn_map: dict[str, float] = {}
+    tcn = _get_tcn_scorer()
+    if tcn is not None:
+        _log(f"Scoring with TCN for {run_date}...")
+        tcn_df = tcn.score(run_date)
+        if not tcn_df.empty:
+            for _, r in tcn_df.iterrows():
+                tcn_map[str(r["ticker"]).upper()] = float(r["tcn_score"])
+        _log(f"TCN scored {len(tcn_map)} tickers (top={max(tcn_map.values(), default=0):.3f} bot={min(tcn_map.values(), default=0):.3f})")
+    else:
+        _log("TCN unavailable — tcn_score=0.5 (neutral) for all tickers")
+
+    # ── Step 2: Per-ticker — beta, market component, residual_alpha ───────────
+    records: list[dict[str, Any]] = []
+    n = len(predictions)
+    for i, (_, row) in enumerate(predictions.iterrows()):
+        ticker = str(row["ticker"]).upper()
+        if ticker == "SPY":
+            continue
+        beta = compute_beta(returns_map.get(ticker, pd.Series(dtype=float)), spy_rets)
+        pred_ret = float(row["predicted_return"])
+        mkt = beta * spy_pred
+        residual = pred_ret - mkt
+        records.append({
+            "ticker":           ticker,
+            "predicted_return": pred_ret,
+            "beta":             beta,
+            "market_component": mkt,
+            "residual_alpha":   residual,
+            "tcn_score":        tcn_map.get(ticker, 0.5),
+            "regime":           row.get("regime") if pd.notna(row.get("regime")) else None,
+            "sector":           row.get("sector") if pd.notna(row.get("sector")) else None,
+            "price":            float(row["price"]) if "price" in predictions.columns and pd.notna(row.get("price")) else float("nan"),
+            "top_shap_factors": _extract_shap(row),
+        })
+        if (i + 1) % 500 == 0 or (i + 1) == n:
+            _log(f"Progress: {i+1}/{n} ({int((i+1)/n*100)}%)...")
+
+    scored = pd.DataFrame(records)
+
+    # ── Step 3: Filter noise, assign direction from sign(residual_alpha) ──────
+    scored = scored[scored["residual_alpha"].abs() >= min_residual].copy()
+    if scored.empty:
+        raise SelectionError(f"No tickers passed min_residual={min_residual}")
+
+    scored["direction"] = scored["residual_alpha"].apply(lambda x: "LONG" if x > 0 else "SHORT")
+    longs_mask  = scored["direction"] == "LONG"
+    shorts_mask = scored["direction"] == "SHORT"
+    _log(f"After filter: {longs_mask.sum()} LONG candidates, {shorts_mask.sum()} SHORT candidates")
+
+    if not longs_mask.any():
+        _log("WARNING: No LONG candidates — all residual alphas negative")
+    if not shorts_mask.any():
+        _log("WARNING: No SHORT candidates — all residual alphas positive")
+
+    # ── Step 4: Side-aware factor_rank (percentile of residual_alpha within pool)
+    # LONGs:  higher residual_alpha → higher factor_rank (strongest bullish signal)
+    # SHORTs: more negative residual_alpha → higher factor_rank (strongest bearish signal)
+    scored["factor_rank"] = 0.5
+    if longs_mask.any():
+        scored.loc[longs_mask, "factor_rank"] = (
+            scored.loc[longs_mask, "residual_alpha"]
+            .rank(pct=True, method="average")
+        )
+    if shorts_mask.any():
+        scored.loc[shorts_mask, "factor_rank"] = (
+            (-scored.loc[shorts_mask, "residual_alpha"])
+            .rank(pct=True, method="average")
+        )
+
+    # ── Step 5: Blend formula with Option D ───────────────────────────────────
+    # LONG:  final_score = 0.60 × factor_rank + 0.40 × tcn_score
+    # SHORT: final_score = 0.60 × factor_rank + 0.40 × (1.0 - tcn_score)
+    scored["final_score"] = 0.0
+    if longs_mask.any():
+        scored.loc[longs_mask, "final_score"] = (
+            FACTOR_BLEND * scored.loc[longs_mask, "factor_rank"]
+            + TCN_BLEND   * scored.loc[longs_mask, "tcn_score"]
+        )
+    if shorts_mask.any():
+        scored.loc[shorts_mask, "final_score"] = (
+            FACTOR_BLEND * scored.loc[shorts_mask, "factor_rank"]
+            + TCN_BLEND   * (1.0 - scored.loc[shorts_mask, "tcn_score"])
+        )
+
+    # ── Step 6: Sort by final_score DESC, take top N, assign rank 1..N ───────
+    longs  = scored[longs_mask ].sort_values("final_score", ascending=False).copy()
+    shorts = scored[shorts_mask].sort_values("final_score", ascending=False).copy()
+
+    if not show_all:
+        longs  = longs.head(top_n)
+        shorts = shorts.head(top_n)
+
+    longs["rank"]  = range(1, len(longs)  + 1)
+    shorts["rank"] = range(1, len(shorts) + 1)
+
+    # ── Assemble final shortlist ──────────────────────────────────────────────
+    shortlist = pd.concat([longs, shorts], ignore_index=True)
+    shortlist = shortlist[[
+        "ticker", "direction", "predicted_return", "beta", "market_component",
+        "residual_alpha", "factor_rank", "tcn_score", "final_score",
+        "rank", "regime", "sector", "price", "top_shap_factors",
+    ]]
+    shortlist = shortlist.sort_values(["direction", "rank"]).reset_index(drop=True)
+
+    # ── Preview log ───────────────────────────────────────────────────────────
+    def _preview(df: pd.DataFrame, n: int = 3) -> str:
+        return ", ".join(
+            f"{r.ticker}(fs={r.final_score:.3f} tcn={r.tcn_score:.2f} fr={r.factor_rank:.2f})"
+            for r in df.head(n).itertuples(index=False)
+        )
+    _log(f"Top LONGs:  {_preview(longs)}")
+    _log(f"Top SHORTs: {_preview(shorts)}")
+
+    # ── Debug ticker ──────────────────────────────────────────────────────────
+    if debug_ticker:
+        t = debug_ticker.upper()
+        hit = scored.loc[scored["ticker"] == t]
+        if hit.empty:
+            raise SelectionError(f"Debug ticker {t} not found")
+        r = hit.iloc[0]
+        _log(f"[DEBUG] {t}")
+        _log(f"  predicted_return:  {r['predicted_return']:+.6f}")
+        _log(f"  beta:              {r['beta']:+.4f}")
+        _log(f"  market_component:  {r['market_component']:+.6f}")
+        _log(f"  residual_alpha:    {r['residual_alpha']:+.6f}")
+        _log(f"  direction:         {r['direction']}")
+        _log(f"  factor_rank:       {r['factor_rank']:.4f}")
+        _log(f"  tcn_score:         {r['tcn_score']:.4f}")
+        _log(f"  final_score:       {r['final_score']:.4f}")
+        in_sl = shortlist.loc[shortlist["ticker"] == t]
+        _log(f"  in_shortlist:      {not in_sl.empty}")
+        if not in_sl.empty:
+            _log(f"  rank:              {in_sl.iloc[0]['rank']}")
+
+    # ── Write to DB ───────────────────────────────────────────────────────────
+    if not dry_run:
+        con = _connect(db_path)
+        try:
+            n_written = _write(con, shortlist, run_date)
+        finally:
+            con.close()
+        _log(f"Written {n_written} rows for {run_date}")
+
+    _log(f"DONE: {len(shortlist)} rows ({len(longs)} LONG + {len(shorts)} SHORT) in {time.time()-t0:.1f}s")
+    return shortlist
+
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="Meridian Stage 5 — Selection")
+    p.add_argument("--db",       default=str(DEFAULT_DB_PATH))
+    p.add_argument("--top-n",    type=int, default=DEFAULT_TOP_N)
+    p.add_argument("--show-all", action="store_true")
+    p.add_argument("--dry-run",  action="store_true")
+    p.add_argument("--debug",    default=None)
+    p.add_argument("--mock",     action="store_true")
+    return p.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    try:
+        frame = select_shortlist(
+            db_path=Path(args.db).expanduser().resolve(),
+            top_n=args.top_n,
+            show_all=args.show_all,
+            dry_run=args.dry_run,
+            debug_ticker=args.debug,
+            mock=args.mock,
+        )
+    except (SelectionError, PrefilterError) as exc:
+        print(json.dumps({"ok": False, "error": str(exc)}, indent=2))
+        return 1
+    print(json.dumps({
+        "ok":     True,
+        "rows":   len(frame),
+        "longs":  int((frame["direction"] == "LONG").sum()),
+        "shorts": int((frame["direction"] == "SHORT").sum()),
+        "mode":   "show_all" if args.show_all else "top_n",
+        "sample": frame.head(5).to_dict(orient="records"),
+    }, indent=2, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

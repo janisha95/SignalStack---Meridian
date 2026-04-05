@@ -1,0 +1,84 @@
+{
+  "defaults": {
+    "account_balance": 50000,
+    "currency": "USD",
+    "max_daily_loss_pct": 0.02,
+    "max_total_drawdown_pct": 0.04,
+    "profit_target_pct": 0.06,
+    "max_single_trade_profit_pct": 0.3,
+    "best_day_max_pct": null,
+    "best_day_warning_pct": null,
+    "min_trading_days": 0,
+    "min_positions": 20,
+    "min_trade_duration_sec": 30,
+    "min_tick_profit": 10,
+    "risk_per_trade_pct": 0.004,
+    "max_risk_per_trade_pct": 0.008,
+    "max_positions": 5,
+    "max_portfolio_heat_pct": 0.03,
+    "max_per_sector": 2,
+    "max_correlation": 0.85,
+    "max_direction_imbalance": 0.8,
+    "stop_atr_multiple": 1.0,
+    "tp_atr_multiple": 2.0,
+    "trail_trigger_atr": 0.75,
+    "trail_atr_multiple": 1.0,
+    "must_close_eod": true,
+    "eod_close_time": "15:30",
+    "no_new_trades_after": "15:00",
+    "block_earnings_same_day": true,
+    "block_halted": true,
+    "block_low_volume": 200000,
+    "block_high_volatility_4min": 0.08,
+    "block_leveraged_inverse": true,
+    "commission_per_trade": 0.75
+  },
+  "presets": {
+    "trade_the_pool_day_50k": {
+      "account_balance": 50000,
+      "max_daily_loss_pct": 0.02,
+      "max_total_drawdown_pct": 0.04,
+      "profit_target_pct": 0.06,
+      "max_single_trade_profit_pct": 0.3,
+      "min_positions": 20,
+      "must_close_eod": true
+    },
+    "trade_the_pool_day_100k": {
+      "account_balance": 100000,
+      "max_daily_loss_pct": 0.02,
+      "max_total_drawdown_pct": 0.04,
+      "profit_target_pct": 0.06,
+      "max_single_trade_profit_pct": 0.3,
+      "min_positions": 20,
+      "must_close_eod": true
+    },
+    "trade_the_pool_swing_10k": {
+      "account_balance": 10000,
+      "max_daily_loss_pct": 0.03,
+      "max_total_drawdown_pct": 0.07,
+      "profit_target_pct": 0.15,
+      "max_single_trade_profit_pct": 0.3,
+      "min_positions": 5,
+      "must_close_eod": false
+    },
+    "ftmo": {
+      "account_balance": 100000,
+      "max_daily_loss_pct": 0.05,
+      "max_total_drawdown_pct": 0.1,
+      "profit_target_pct": 0.1,
+      "best_day_max_pct": 0.5,
+      "best_day_warning_pct": 0.4,
+      "min_trading_days": 4,
+      "must_close_eod": false
+    },
+    "myfundedtrader": {
+      "max_daily_loss_pct": 0.05,
+      "max_total_drawdown_pct": 0.08,
+      "profit_target_pct": 0.08,
+      "best_day_max_pct": null,
+      "best_day_warning_pct": null,
+      "min_trading_days": 5
+    },
+    "custom": {}
+  }
+}
